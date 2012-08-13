@@ -5,11 +5,11 @@
  * Time: 17:57
  * To change this template use File | Settings | File Templates.
  */
-define([], function () {
+define(function () {
 
-        var module = {};
+        var EventBus = {};
 
-        module.EventBus = function () {
+        EventBus.EventBus = function () {
 
             var self = this;
 
@@ -23,7 +23,7 @@ define([], function () {
         };
 
 
-        module.EventChain = function (eventBus) {
+        EventBus.EventChain = function (eventBus) {
 
             var self = this;
 
@@ -42,7 +42,7 @@ define([], function () {
                 if (!event.type)
                     throw new Error("event-bus.EventChain.addEvent needs an object with a property 'type' as first argument");
 
-                var step = new module.EventChainStep(event, self);
+                var step = new EventBus.EventChainStep(event, self);
 
                 self.steps.push(step);
 
@@ -87,7 +87,7 @@ define([], function () {
         };
 
 
-        module.EventChainStep = function (eventBus, event, chain) {
+        EventBus.EventChainStep = function (eventBus, event, chain) {
 
             var self = this;
 
@@ -115,7 +115,7 @@ define([], function () {
 
             self.addAsyncOperation = function (operation) {
 
-                operation.addResponder(new module.Responder(self.resultHandler, self.errorHandler));
+                operation.addResponder(new EventBus.Responder(self.resultHandler, self.errorHandler));
                 self.pending++;
             };
 
@@ -152,7 +152,7 @@ define([], function () {
         };
 
 
-        module.AsyncOperation = function () {
+        EventBus.AsyncOperation = function () {
 
             var self = this;
 
@@ -163,7 +163,7 @@ define([], function () {
                 if (!responder)
                     return;
 
-                if (!(responder instanceof module.Responder))
+                if (!(responder instanceof EventBus.Responder))
                     throw new Error("event-bus.AsyncToken.addResponder needs an instance of type Responder as first argument");
 
                 self.responders.push(responder);
@@ -187,7 +187,7 @@ define([], function () {
         };
 
 
-        module.Responder = function (resultHandler, faultHandler) {
+        EventBus.Responder = function (resultHandler, faultHandler) {
 
             var self = this;
 
@@ -208,7 +208,6 @@ define([], function () {
         };
 
 
-        return module;
+        return EventBus;
     }
-)
-;
+);
