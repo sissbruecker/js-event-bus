@@ -39,10 +39,10 @@ define(function () {
                 if (!event)
                     throw new Error("event-bus.EventChain.addEvent needs an object as first argument");
 
-                if (!event.type)
-                    throw new Error("event-bus.EventChain.addEvent needs an object with a property 'type' as first argument");
+                if (!event.type || !(typeof(event.type) == "string"))
+                    throw new Error("event-bus.EventChain.addEvent needs an object with a string property 'type' as first argument");
 
-                var step = new EventBus.EventChainStep(event, self);
+                var step = new EventBus.EventChainStep(self, event);
 
                 self.steps.push(step);
 
@@ -87,11 +87,10 @@ define(function () {
         };
 
 
-        EventBus.EventChainStep = function (eventBus, event, chain) {
+        EventBus.EventChainStep = function (chain, event) {
 
             var self = this;
 
-            self.eventBus = eventBus;
             self.event = event;
             self.event.step = self;
             self.chain = chain;
@@ -105,7 +104,7 @@ define(function () {
                 self.isComplete = false;
                 self.isFailed = false;
 
-                self.eventBus.publish(event);
+                self.chain.eventBus.publish(self.event);
 
                 if (self.pending > 0)
                     return;
@@ -171,18 +170,16 @@ define(function () {
 
             self.result = function (data) {
 
-                $.each(self.responders, function (key, value) {
-
-                    value.result(data);
-                });
+                for (var i = 0; i < self.responders.length; i++) {
+                    self.responders[i].result(data);
+                }
             };
 
             self.fault = function (error) {
 
-                $.each(self.responders, function (key, value) {
-
-                    value.fault(error);
-                });
+                for (var i = 0; i < self.responders.length; i++) {
+                    self.responders[i].fault(error);
+                }
             };
         };
 
@@ -198,12 +195,12 @@ define(function () {
                 throw new Error("event-bus.Responder.Constructor needs a function as first argument");
 
             self.result = function (data) {
-                resultHandler.apply(data);
+                resultHandler.apply(null, [data]);
             };
 
             self.fault = function (error) {
                 if (faultHandler)
-                    faultHandler.apply(error);
+                    faultHandler.apply(null, [error]);
             }
         };
 
