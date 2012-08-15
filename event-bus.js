@@ -13,13 +13,80 @@ define(function () {
 
             var self = this;
 
+            self.subscriptions = {};
+
             self.publish = function (event) {
 
+                if (!event)
+                    throw new Error("event-bus.EventBus.publish needs an object 'event' as first argument");
+
+                if (!event.type || !(typeof(event.type) == "string"))
+                    throw new Error("event-bus.EventBus.publish needs an object with a string property 'type' as first argument");
+
+                // If there are no subscriptions for this event type then return
+                if (!self.subscriptions[event.type])
+                    return;
+
+                // Call each handler for this event type
+                var handlers = self.subscriptions[event.type];
+
+                for (var i = 0; i < handlers.length; i++) {
+
+                    handlers[i].apply(null, [event]);
+                }
             };
 
             self.subscribe = function (type, handler) {
 
+                // Check argument types
+                if (typeof type !== 'string')
+                    throw new Error("event-bus.EventBus.subscribe needs a string 'type' as first argument");
+
+                if (typeof handler !== 'function')
+                    throw new Error("event-bus.EventBus.subscribe needs a function 'handler' as second argument")
+
+                // Create handler array if it does not exist
+                if (!self.subscriptions[type]) {
+                    self.subscriptions[type] = [];
+                }
+
+                // Check if handler is already subscribed
+                var handlers = self.subscriptions[type];
+
+                for (var i = 0; i < handlers.length; i++) {
+                    if (handlers[i] == handler)
+                        return;
+                }
+
+                // Add handler
+                handlers.push(handler);
             };
+
+            self.unsubscribe = function (type, handler) {
+
+                // Check argument types
+                if (typeof type !== 'string')
+                    throw new Error("event-bus.EventBus.subscribe needs a string 'type' as first argument");
+
+                if (typeof handler !== 'function')
+                    throw new Error("event-bus.EventBus.subscribe needs a function 'handler' as second argument")
+
+                // If there are no subscriptions for this event type then return
+                if (!self.subscriptions[type])
+                    return;
+
+                // Remove handler from handler array
+                var handlers = self.subscriptions[type];
+
+                for (var i = 0; i < handlers.length; i++) {
+
+                    if (handlers[i] == handler) {
+
+                        handlers.splice(i, 1);
+                        return;
+                    }
+                }
+            }
         };
 
 
@@ -37,7 +104,7 @@ define(function () {
             self.addEvent = function (event) {
 
                 if (!event)
-                    throw new Error("event-bus.EventChain.addEvent needs an object as first argument");
+                    throw new Error("event-bus.EventChain.addEvent needs an object 'event' as first argument");
 
                 if (!event.type || !(typeof(event.type) == "string"))
                     throw new Error("event-bus.EventChain.addEvent needs an object with a string property 'type' as first argument");
@@ -192,7 +259,7 @@ define(function () {
             self.faultHandler = faultHandler;
 
             if (!resultHandler)
-                throw new Error("event-bus.Responder.Constructor needs a function as first argument");
+                throw new Error("event-bus.Responder.Constructor needs a function 'resultHandler' as first argument");
 
             self.result = function (data) {
                 resultHandler.apply(null, [data]);
@@ -203,7 +270,6 @@ define(function () {
                     faultHandler.apply(null, [error]);
             }
         };
-
 
         return EventBus;
     }
