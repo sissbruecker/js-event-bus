@@ -43,7 +43,7 @@ define(function () {
                     throw new Error("event-bus.EventBus.subscribe needs a string 'type' as first argument");
 
                 if (typeof handler !== 'function')
-                    throw new Error("event-bus.EventBus.subscribe needs a function 'handler' as second argument")
+                    throw new Error("event-bus.EventBus.subscribe needs a function 'handler' as second argument");
 
                 // Create handler array if it does not exist
                 if (!self.subscriptions[type]) {
@@ -63,6 +63,8 @@ define(function () {
             };
 
             self.unsubscribe = function (type, handler) {
+
+                // TODO: Unsubscribing without a handler could unsubscribe all handlers - useful for subscribed inline functions
 
                 // Check argument types
                 if (typeof type !== 'string')
@@ -258,8 +260,11 @@ define(function () {
             self.resultHandler = resultHandler;
             self.faultHandler = faultHandler;
 
-            if (!resultHandler)
+            if (!resultHandler || typeof resultHandler !== 'function')
                 throw new Error("event-bus.Responder.Constructor needs a function 'resultHandler' as first argument");
+
+            if (faultHandler && typeof faultHandler !== 'function')
+                throw new Error("event-bus.Responder.Constructor needs a function 'faultHandler' as sceond argument");
 
             self.result = function (data) {
                 resultHandler.apply(null, [data]);

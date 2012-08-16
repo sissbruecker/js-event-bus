@@ -372,15 +372,15 @@ buster.testCase("EventChain", function (run) {
                         event.step.addAsyncOperation(operation2);
                         event.step.addAsyncOperation(operation3);
 
-                        setTimeout(function() {
+                        setTimeout(function () {
                             operation1.result("result");
                         }, 100);
 
-                        setTimeout(function() {
+                        setTimeout(function () {
                             operation2.result("result");
                         }, 100);
 
-                        setTimeout(function() {
+                        setTimeout(function () {
                             operation3.result("result");
                         }, 100);
 
@@ -400,7 +400,7 @@ buster.testCase("EventChain", function (run) {
                 assert.equals(chain.isComplete, false);
                 assert.equals(chain.isFailed, false);
 
-                setTimeout(function() {
+                setTimeout(function () {
 
                     assert.equals(bus.events.length, 3);
                     assert.equals(bus.events[0].type, "test-async-event-type-1");
@@ -427,7 +427,7 @@ buster.testCase("EventChain", function (run) {
 
                         event.step.addAsyncOperation(operation1);
 
-                        setTimeout(function() {
+                        setTimeout(function () {
                             operation1.fault("fault");
                         }, 100);
 
@@ -449,7 +449,7 @@ buster.testCase("EventChain", function (run) {
                 assert.equals(chain.isComplete, false);
                 assert.equals(chain.isFailed, false);
 
-                setTimeout(function() {
+                setTimeout(function () {
 
                     assert.equals(bus.events.length, 3);
                     assert.equals(bus.events[0].type, "test-async-event-type-1");
@@ -475,7 +475,7 @@ buster.testCase("EventChain", function (run) {
 
                         event.step.addAsyncOperation(operation1);
 
-                        setTimeout(function() {
+                        setTimeout(function () {
                             operation1.fault("fault");
                         }, 100);
 
@@ -497,7 +497,7 @@ buster.testCase("EventChain", function (run) {
                 assert.equals(chain.isComplete, false);
                 assert.equals(chain.isFailed, false);
 
-                setTimeout(function() {
+                setTimeout(function () {
 
                     assert.equals(bus.events.length, 1);
                     assert.equals(bus.events[0].type, "test-async-event-type-1");
@@ -507,6 +507,130 @@ buster.testCase("EventChain", function (run) {
 
                 }, 500);
             }
+        });
+
+    });
+});
+
+buster.testCase("EventBus", function (run) {
+
+    require.config({baseUrl:"/../event-bus.js"});
+
+    require(["event-bus"], function (module) {
+
+        run({
+            "EventBus:test-publish-invalid-parameters":function (done) {
+
+                assert.exception(function () {
+
+                    new module.EventBus().publish(null);
+                });
+
+                assert.exception(function () {
+
+                    new module.EventBus().publish({data:"data"});
+                });
+
+                done();
+            },
+
+            "EventBus:test-subscribe-invalid-parameters":function (done) {
+
+                assert.exception(function () {
+
+                    new module.EventBus().subscribe(null, function () {
+                    });
+                });
+
+                assert.exception(function () {
+
+                    new module.EventBus().subscribe(50, function () {
+                    });
+                });
+
+                assert.exception(function () {
+
+                    new module.EventBus().subscribe("event-type", null);
+                });
+
+                assert.exception(function () {
+
+                    new module.EventBus().subscribe("event-type", 50);
+                });
+
+                done();
+            },
+
+            "EventBus:test-subscribe-and-publish":function (done) {
+
+                var bus = new module.EventBus();
+                var handlerCalls = 0;
+
+                // Subscribe an event handler
+                bus.subscribe("test-subscribe-event-type", function (event) {
+                    handlerCalls++;
+                    assert.equals(event.type, "test-subscribe-event-type");
+                    assert.equals(event.data, "test-subscribe-event-data");
+                });
+
+                var event = {type:"test-subscribe-event-type", data: "test-subscribe-event-data"};
+
+                bus.publish(event);
+
+                assert.equals(handlerCalls, 1);
+
+                // Subscribe a second handler
+                bus.subscribe("test-subscribe-event-type", function (event) {
+                    handlerCalls++;
+                });
+
+                bus.publish(event);
+
+                assert.equals(handlerCalls, 3);
+
+                done();
+            },
+
+            "EventBus:test-subscribe-multiple":function (done) {
+
+                var bus = new module.EventBus();
+                var handlerCalls = 0;
+
+                // Subscribing the same handler twice should still only result in one handler call
+                var handler = function (event) {
+                    handlerCalls++;
+                };
+
+                bus.subscribe("test-subscribe", handler);
+                bus.subscribe("test-subscribe", handler);
+                bus.subscribe("test-subscribe", handler);
+
+                bus.publish({type:"test-subscribe"});
+
+                assert.equals(handlerCalls, 1);
+
+                done();
+            },
+
+            "EventBus:test-unsubscribe":function (done) {
+
+                var bus = new module.EventBus();
+                var handlerCalls = 0;
+
+                var handler = function (event) {
+                    handlerCalls++;
+                };
+
+                bus.subscribe("test-subscribe", handler);
+                bus.unsubscribe("test-subscribe", handler);
+
+                bus.publish({type:"test-subscribe"});
+
+                assert.equals(handlerCalls, 0);
+
+                done();
+            }
+
         });
 
     });
