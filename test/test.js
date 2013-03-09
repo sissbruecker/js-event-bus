@@ -4,634 +4,604 @@ buster.testRunner.timeout = 1000;
 
 buster.testCase("Responder", function (run) {
 
-    require.config({baseUrl:"/../event-bus.js"});
+    run({
+        "Responder:test-missing-result-handler": function (done) {
 
-    require(["event-bus"], function (module) {
+            assert.exception(function () {
 
-        run({
-            "Responder:test-missing-result-handler":function (done) {
+                new lazydevs.eventbus.Responder();
+            });
 
-                assert.exception(function () {
+            done();
+        },
 
-                    new module.Responder();
-                });
+        "Responder:test-result-with-data": function (done) {
 
-                done();
-            },
+            var responder = new lazydevs.eventbus.Responder(
 
-            "Responder:test-result-with-data":function (done) {
+                function (data) {
 
-                var responder = new module.Responder(
+                    assert.equals(data, "test-complete");
 
-                    function (data) {
+                    done();
+                }
+            );
 
-                        assert.equals(data, "test-complete");
+            responder.result("test-complete");
+        },
 
-                        done();
-                    }
-                );
+        "Responder:test-result-without-data": function (done) {
 
-                responder.result("test-complete");
-            },
+            var responder = new lazydevs.eventbus.Responder(
 
-            "Responder:test-result-without-data":function (done) {
+                function (data) {
 
-                var responder = new module.Responder(
+                    assert.equals(data, undefined);
 
-                    function (data) {
+                    done();
+                }
+            );
 
-                        assert.equals(data, undefined);
+            responder.result();
+        },
 
-                        done();
-                    }
-                );
+        "Responder:test-fault": function (done) {
 
-                responder.result();
-            },
+            var responder = new lazydevs.eventbus.Responder(
 
-            "Responder:test-fault":function (done) {
+                function (data) {
+                },
+                function (error) {
+                    assert.equals(error.message, "test-fault");
+                    done();
+                }
+            );
 
-                var responder = new module.Responder(
-
-                    function (data) {
-                    },
-                    function (error) {
-                        assert.equals(error.message, "test-fault");
-                        done();
-                    }
-                );
-
-                responder.fault(new Error("test-fault"));
-            }
-
-        });
+            responder.fault(new Error("test-fault"));
+        }
 
     });
 });
 
 buster.testCase("AsyncOperation", function (run) {
 
-    require.config({baseUrl:"/../event-bus.js"});
+    run({
+        "AsyncOperation:test-result": function (done) {
 
-    require(["event-bus"], function (module) {
+            var operation = new lazydevs.eventbus.AsyncOperation();
+            var responderResults = [];
 
-        run({
-            "AsyncOperation:test-result":function (done) {
+            operation.addResponder(new lazydevs.eventbus.Responder(function (data) {
+                responderResults.push(data)
+            }));
+            operation.addResponder(new lazydevs.eventbus.Responder(function (data) {
+                responderResults.push(data)
+            }));
+            operation.addResponder(new lazydevs.eventbus.Responder(function (data) {
+                responderResults.push(data)
+            }));
 
-                var operation = new module.AsyncOperation();
-                var responderResults = [];
+            operation.result("test-result");
 
-                operation.addResponder(new module.Responder(function (data) {
-                    responderResults.push(data)
-                }));
-                operation.addResponder(new module.Responder(function (data) {
-                    responderResults.push(data)
-                }));
-                operation.addResponder(new module.Responder(function (data) {
-                    responderResults.push(data)
-                }));
+            assert.equals(responderResults.length, 3);
+            assert.equals(responderResults[0], "test-result");
+            assert.equals(responderResults[1], "test-result");
+            assert.equals(responderResults[2], "test-result");
 
-                operation.result("test-result");
+            done();
+        },
+        "AsyncOperation:test-fault": function (done) {
 
-                assert.equals(responderResults.length, 3);
-                assert.equals(responderResults[0], "test-result");
-                assert.equals(responderResults[1], "test-result");
-                assert.equals(responderResults[2], "test-result");
+            var operation = new lazydevs.eventbus.AsyncOperation();
+            var responderFaults = [];
 
-                done();
-            },
-            "AsyncOperation:test-fault":function (done) {
+            operation.addResponder(new lazydevs.eventbus.Responder(function (data) {
+            }, function (fault) {
+                responderFaults.push(fault)
+            }));
+            operation.addResponder(new lazydevs.eventbus.Responder(function (data) {
+            }, function (fault) {
+                responderFaults.push(fault)
+            }));
+            operation.addResponder(new lazydevs.eventbus.Responder(function (data) {
+            }, function (fault) {
+                responderFaults.push(fault)
+            }));
 
-                var operation = new module.AsyncOperation();
-                var responderFaults = [];
+            operation.fault(new Error("test-fault"));
 
-                operation.addResponder(new module.Responder(function (data) {
-                }, function (fault) {
-                    responderFaults.push(fault)
-                }));
-                operation.addResponder(new module.Responder(function (data) {
-                }, function (fault) {
-                    responderFaults.push(fault)
-                }));
-                operation.addResponder(new module.Responder(function (data) {
-                }, function (fault) {
-                    responderFaults.push(fault)
-                }));
+            assert.equals(responderFaults.length, 3);
+            assert.equals(responderFaults[0].message, "test-fault");
+            assert.equals(responderFaults[1].message, "test-fault");
+            assert.equals(responderFaults[2].message, "test-fault");
 
-                operation.fault(new Error("test-fault"));
-
-                assert.equals(responderFaults.length, 3);
-                assert.equals(responderFaults[0].message, "test-fault");
-                assert.equals(responderFaults[1].message, "test-fault");
-                assert.equals(responderFaults[2].message, "test-fault");
-
-                done();
-            }
-        });
-
+            done();
+        }
     });
 });
 
 buster.testCase("EventChainStep", function (run) {
 
-    require.config({baseUrl:"/../event-bus.js"});
+    run({
+        "EventChainStep:test-proceed-sync": function (done) {
 
-    require(["event-bus"], function (module) {
+            var isStepComplete = false;
 
-        run({
-            "EventChainStep:test-proceed-sync":function (done) {
+            var EventBusMockup = function () {
 
-                var isStepComplete = false;
+                var self = this;
 
-                var EventBusMockup = function () {
+                self.events = [];
 
-                    var self = this;
+                self.publish = function (event) {
 
-                    self.events = [];
+                    self.events.push(event);
+                }
+            };
 
-                    self.publish = function (event) {
+            var bus = new EventBusMockup();
 
-                        self.events.push(event);
-                    }
+            var EventChainMockup = function () {
+
+                var self = this;
+
+                self.eventBus = bus;
+
+                self.stepComplete = function () {
+                    isStepComplete = true;
                 };
+            };
 
-                var bus = new EventBusMockup();
+            var step = new lazydevs.eventbus.EventChainStep(new EventChainMockup(), {"type": "test-proceed-sync-event-type", data: "test-proceed-sync-event-data"});
 
-                var EventChainMockup = function () {
+            step.proceed();
 
-                    var self = this;
+            assert.equals(bus.events.length, 1);
+            assert.equals(bus.events[0].type, "test-proceed-sync-event-type");
+            assert.equals(bus.events[0].data, "test-proceed-sync-event-data");
+            assert.equals(step.pending, 0);
+            assert.equals(step.isComplete, true);
+            assert.equals(step.isFailed, false);
+            assert.equals(isStepComplete, true);
 
-                    self.eventBus = bus;
+            done();
+        },
+        "EventChainStep:test-proceed-async": function (done) {
 
-                    self.stepComplete = function () {
-                        isStepComplete = true;
-                    };
+            var isStepComplete = false;
+
+            var EventBusMockup = function () {
+
+                var self = this;
+
+                self.events = [];
+
+                self.publish = function (event) {
+
+                    var operation1 = new lazydevs.eventbus.AsyncOperation();
+                    var operation2 = new lazydevs.eventbus.AsyncOperation();
+                    var operation3 = new lazydevs.eventbus.AsyncOperation();
+
+                    event.step.addAsyncOperation(operation1);
+                    event.step.addAsyncOperation(operation2);
+                    event.step.addAsyncOperation(operation3);
+
+                    setTimeout(function () {
+                        operation1.result("result");
+                    }, 100);
+
+                    setTimeout(function () {
+                        operation2.result("result");
+                    }, 100);
+
+                    setTimeout(function () {
+                        operation3.result("result");
+                    }, 100);
+
+                    self.events.push(event);
+                }
+            };
+
+            var bus = new EventBusMockup();
+
+            var EventChainMockup = function () {
+
+                var self = this;
+
+                self.eventBus = bus;
+
+                self.stepComplete = function () {
+                    isStepComplete = true;
                 };
+            };
 
-                var step = new module.EventChainStep(new EventChainMockup(), {"type":"test-proceed-sync-event-type", data:"test-proceed-sync-event-data"});
+            var step = new lazydevs.eventbus.EventChainStep(new EventChainMockup(), {"type": "test-proceed-async-event-type", data: "test-proceed-async-event-data"});
 
-                step.proceed();
+            step.proceed();
 
-                assert.equals(bus.events.length, 1);
-                assert.equals(bus.events[0].type, "test-proceed-sync-event-type");
-                assert.equals(bus.events[0].data, "test-proceed-sync-event-data");
+            assert.equals(step.pending, 3);
+            assert.equals(step.isComplete, false);
+            assert.equals(step.isFailed, false);
+            assert.equals(isStepComplete, false);
+
+            setTimeout(function () {
                 assert.equals(step.pending, 0);
                 assert.equals(step.isComplete, true);
                 assert.equals(step.isFailed, false);
                 assert.equals(isStepComplete, true);
-
                 done();
-            },
-            "EventChainStep:test-proceed-async":function (done) {
+            }, 200);
+        },
+        "EventChainStep:test-proceed-async-error": function (done) {
 
-                var isStepComplete = false;
 
-                var EventBusMockup = function () {
+            var EventBusMockup = function () {
 
-                    var self = this;
+                var self = this;
 
-                    self.events = [];
+                self.publish = function (event) {
 
-                    self.publish = function (event) {
+                    var operation1 = new lazydevs.eventbus.AsyncOperation();
+                    var operation2 = new lazydevs.eventbus.AsyncOperation();
+                    var operation3 = new lazydevs.eventbus.AsyncOperation();
 
-                        var operation1 = new module.AsyncOperation();
-                        var operation2 = new module.AsyncOperation();
-                        var operation3 = new module.AsyncOperation();
+                    event.step.addAsyncOperation(operation1);
+                    event.step.addAsyncOperation(operation2);
+                    event.step.addAsyncOperation(operation3);
 
-                        event.step.addAsyncOperation(operation1);
-                        event.step.addAsyncOperation(operation2);
-                        event.step.addAsyncOperation(operation3);
+                    setTimeout(function () {
+                        operation1.fault(new Error("test-proceed-async-error"));
+                    }, 100);
 
-                        setTimeout(function () {
-                            operation1.result("result");
-                        }, 100);
+                    setTimeout(function () {
+                        operation1.fault(new Error("test-proceed-async-error"));
+                    }, 100);
 
-                        setTimeout(function () {
-                            operation2.result("result");
-                        }, 100);
+                    setTimeout(function () {
+                        operation1.fault(new Error("test-proceed-async-error"));
+                    }, 100);
+                }
+            };
 
-                        setTimeout(function () {
-                            operation3.result("result");
-                        }, 100);
+            var bus = new EventBusMockup();
 
-                        self.events.push(event);
-                    }
+            var errors = 0;
+
+            var EventChainMockup = function () {
+
+                var self = this;
+
+                self.eventBus = bus;
+
+                self.stepError = function () {
+                    errors++;
                 };
+            };
 
-                var bus = new EventBusMockup();
+            var step = new lazydevs.eventbus.EventChainStep(new EventChainMockup(), {"type": "test-proceed-async-event-type", data: "test-proceed-async-event-data"});
 
-                var EventChainMockup = function () {
+            step.proceed();
 
-                    var self = this;
+            assert.equals(step.pending, 3);
+            assert.equals(step.isComplete, false);
+            assert.equals(step.isFailed, false);
 
-                    self.eventBus = bus;
-
-                    self.stepComplete = function () {
-                        isStepComplete = true;
-                    };
-                };
-
-                var step = new module.EventChainStep(new EventChainMockup(), {"type":"test-proceed-async-event-type", data:"test-proceed-async-event-data"});
-
-                step.proceed();
-
-                assert.equals(step.pending, 3);
-                assert.equals(step.isComplete, false);
-                assert.equals(step.isFailed, false);
-                assert.equals(isStepComplete, false);
-
-                setTimeout(function () {
-                    assert.equals(step.pending, 0);
-                    assert.equals(step.isComplete, true);
-                    assert.equals(step.isFailed, false);
-                    assert.equals(isStepComplete, true);
-                    done();
-                }, 200);
-            },
-            "EventChainStep:test-proceed-async-error":function (done) {
-
-
-                var EventBusMockup = function () {
-
-                    var self = this;
-
-                    self.publish = function (event) {
-
-                        var operation1 = new module.AsyncOperation();
-                        var operation2 = new module.AsyncOperation();
-                        var operation3 = new module.AsyncOperation();
-
-                        event.step.addAsyncOperation(operation1);
-                        event.step.addAsyncOperation(operation2);
-                        event.step.addAsyncOperation(operation3);
-
-                        setTimeout(function () {
-                            operation1.fault(new Error("test-proceed-async-error"));
-                        }, 100);
-
-                        setTimeout(function () {
-                            operation1.fault(new Error("test-proceed-async-error"));
-                        }, 100);
-
-                        setTimeout(function () {
-                            operation1.fault(new Error("test-proceed-async-error"));
-                        }, 100);
-                    }
-                };
-
-                var bus = new EventBusMockup();
-
-                var errors = 0;
-
-                var EventChainMockup = function () {
-
-                    var self = this;
-
-                    self.eventBus = bus;
-
-                    self.stepError = function () {
-                        errors++;
-                    };
-                };
-
-                var step = new module.EventChainStep(new EventChainMockup(), {"type":"test-proceed-async-event-type", data:"test-proceed-async-event-data"});
-
-                step.proceed();
-
-                assert.equals(step.pending, 3);
-                assert.equals(step.isComplete, false);
-                assert.equals(step.isFailed, false);
-
-                setTimeout(function () {
-                    assert.equals(errors, 3);
-                    assert.equals(step.pending, 0);
-                    assert.equals(step.isComplete, true);
-                    assert.equals(step.isFailed, true);
-                    done();
-                }, 200);
-            }
-        });
-
+            setTimeout(function () {
+                assert.equals(errors, 3);
+                assert.equals(step.pending, 0);
+                assert.equals(step.isComplete, true);
+                assert.equals(step.isFailed, true);
+                done();
+            }, 200);
+        }
     });
 });
 
 buster.testCase("EventChain", function (run) {
 
-    require.config({baseUrl:"/../event-bus.js"});
+    run({
+        "EventChain:test-sync": function (done) {
 
-    require(["event-bus"], function (module) {
+            var EventBusMockup = function () {
 
-        run({
-            "EventChain:test-sync":function (done) {
+                var self = this;
 
-                var EventBusMockup = function () {
+                self.events = [];
 
-                    var self = this;
+                self.publish = function (event) {
 
-                    self.events = [];
+                    self.events.push(event);
+                }
+            };
 
-                    self.publish = function (event) {
+            var bus = new EventBusMockup();
 
-                        self.events.push(event);
-                    }
-                };
+            var chain = new lazydevs.eventbus.EventChain(bus);
 
-                var bus = new EventBusMockup();
+            chain.add({type: "test-sync-event-type-1", data: "test-sync-event-data"})
+                .add({type: "test-sync-event-type-2", data: "test-sync-event-data"})
+                .add({type: "test-sync-event-type-3", data: "test-sync-event-data"})
+                .start();
 
-                var chain = new module.EventChain(bus);
+            assert.equals(bus.events.length, 3);
+            assert.equals(bus.events[0].type, "test-sync-event-type-1");
+            assert.equals(bus.events[1].type, "test-sync-event-type-2");
+            assert.equals(bus.events[2].type, "test-sync-event-type-3");
+            assert.equals(chain.isComplete, true);
+            assert.equals(chain.isFailed, false);
 
-                chain.addEvent({type:"test-sync-event-type-1", data:"test-sync-event-data"})
-                    .addEvent({type:"test-sync-event-type-2", data:"test-sync-event-data"})
-                    .addEvent({type:"test-sync-event-type-3", data:"test-sync-event-data"})
-                    .start();
+            done();
+        },
+        "EventChain:test-async": function (done) {
+
+            var EventBusMockup = function () {
+
+                var self = this;
+
+                self.events = [];
+
+                self.publish = function (event) {
+
+                    var operation1 = new lazydevs.eventbus.AsyncOperation();
+                    var operation2 = new lazydevs.eventbus.AsyncOperation();
+                    var operation3 = new lazydevs.eventbus.AsyncOperation();
+
+                    event.step.addAsyncOperation(operation1);
+                    event.step.addAsyncOperation(operation2);
+                    event.step.addAsyncOperation(operation3);
+
+                    setTimeout(function () {
+                        operation1.result("result");
+                    }, 100);
+
+                    setTimeout(function () {
+                        operation2.result("result");
+                    }, 100);
+
+                    setTimeout(function () {
+                        operation3.result("result");
+                    }, 100);
+
+                    self.events.push(event);
+                }
+            };
+
+            var bus = new EventBusMockup();
+
+            var chain = new lazydevs.eventbus.EventChain(bus);
+
+            chain.add({type: "test-async-event-type-1", data: "test-async-event-data"})
+                .add({type: "test-async-event-type-2", data: "test-async-event-data"})
+                .add({type: "test-async-event-type-3", data: "test-async-event-data"})
+                .start();
+
+            assert.equals(chain.isComplete, false);
+            assert.equals(chain.isFailed, false);
+
+            setTimeout(function () {
 
                 assert.equals(bus.events.length, 3);
-                assert.equals(bus.events[0].type, "test-sync-event-type-1");
-                assert.equals(bus.events[1].type, "test-sync-event-type-2");
-                assert.equals(bus.events[2].type, "test-sync-event-type-3");
+                assert.equals(bus.events[0].type, "test-async-event-type-1");
+                assert.equals(bus.events[1].type, "test-async-event-type-2");
+                assert.equals(bus.events[2].type, "test-async-event-type-3");
                 assert.equals(chain.isComplete, true);
                 assert.equals(chain.isFailed, false);
 
                 done();
-            },
-            "EventChain:test-async":function (done) {
 
-                var EventBusMockup = function () {
+            }, 500);
+        },
+        "EventChain:test-async-continue-on-error": function (done) {
 
-                    var self = this;
+            var EventBusMockup = function () {
 
-                    self.events = [];
+                var self = this;
 
-                    self.publish = function (event) {
+                self.events = [];
 
-                        var operation1 = new module.AsyncOperation();
-                        var operation2 = new module.AsyncOperation();
-                        var operation3 = new module.AsyncOperation();
+                self.publish = function (event) {
 
-                        event.step.addAsyncOperation(operation1);
-                        event.step.addAsyncOperation(operation2);
-                        event.step.addAsyncOperation(operation3);
+                    var operation1 = new lazydevs.eventbus.AsyncOperation();
 
-                        setTimeout(function () {
-                            operation1.result("result");
-                        }, 100);
+                    event.step.addAsyncOperation(operation1);
 
-                        setTimeout(function () {
-                            operation2.result("result");
-                        }, 100);
+                    setTimeout(function () {
+                        operation1.fault("fault");
+                    }, 100);
 
-                        setTimeout(function () {
-                            operation3.result("result");
-                        }, 100);
+                    self.events.push(event);
+                }
+            };
 
-                        self.events.push(event);
-                    }
-                };
+            var bus = new EventBusMockup();
 
-                var bus = new EventBusMockup();
+            var chain = new lazydevs.eventbus.EventChain(bus);
 
-                var chain = new module.EventChain(bus);
+            chain.stopOnError = false;
 
-                chain.addEvent({type:"test-async-event-type-1", data:"test-async-event-data"})
-                    .addEvent({type:"test-async-event-type-2", data:"test-async-event-data"})
-                    .addEvent({type:"test-async-event-type-3", data:"test-async-event-data"})
-                    .start();
+            chain.add({type: "test-async-event-type-1", data: "test-async-event-data"})
+                .add({type: "test-async-event-type-2", data: "test-async-event-data"})
+                .add({type: "test-async-event-type-3", data: "test-async-event-data"})
+                .start();
 
-                assert.equals(chain.isComplete, false);
+            assert.equals(chain.isComplete, false);
+            assert.equals(chain.isFailed, false);
+
+            setTimeout(function () {
+
+                assert.equals(bus.events.length, 3);
+                assert.equals(bus.events[0].type, "test-async-event-type-1");
+                assert.equals(bus.events[1].type, "test-async-event-type-2");
+                assert.equals(bus.events[2].type, "test-async-event-type-3");
+                assert.equals(chain.isComplete, true);
                 assert.equals(chain.isFailed, false);
+                done();
 
-                setTimeout(function () {
+            }, 500);
+        },
+        "EventChain:test-async-stop-on-error": function (done) {
 
-                    assert.equals(bus.events.length, 3);
-                    assert.equals(bus.events[0].type, "test-async-event-type-1");
-                    assert.equals(bus.events[1].type, "test-async-event-type-2");
-                    assert.equals(bus.events[2].type, "test-async-event-type-3");
-                    assert.equals(chain.isComplete, true);
-                    assert.equals(chain.isFailed, false);
+            var EventBusMockup = function () {
 
-                    done();
+                var self = this;
 
-                }, 500);
-            },
-            "EventChain:test-async-continue-on-error":function (done) {
+                self.events = [];
 
-                var EventBusMockup = function () {
+                self.publish = function (event) {
 
-                    var self = this;
+                    var operation1 = new lazydevs.eventbus.AsyncOperation();
 
-                    self.events = [];
+                    event.step.addAsyncOperation(operation1);
 
-                    self.publish = function (event) {
+                    setTimeout(function () {
+                        operation1.fault("fault");
+                    }, 100);
 
-                        var operation1 = new module.AsyncOperation();
+                    self.events.push(event);
+                }
+            };
 
-                        event.step.addAsyncOperation(operation1);
+            var bus = new EventBusMockup();
 
-                        setTimeout(function () {
-                            operation1.fault("fault");
-                        }, 100);
+            var chain = new lazydevs.eventbus.EventChain(bus);
 
-                        self.events.push(event);
-                    }
-                };
+            chain.stopOnError = true;
 
-                var bus = new EventBusMockup();
+            chain.add({type: "test-async-event-type-1", data: "test-async-event-data"})
+                .add({type: "test-async-event-type-2", data: "test-async-event-data"})
+                .add({type: "test-async-event-type-3", data: "test-async-event-data"})
+                .start();
 
-                var chain = new module.EventChain(bus);
+            assert.equals(chain.isComplete, false);
+            assert.equals(chain.isFailed, false);
 
-                chain.stopOnError = false;
+            setTimeout(function () {
 
-                chain.addEvent({type:"test-async-event-type-1", data:"test-async-event-data"})
-                    .addEvent({type:"test-async-event-type-2", data:"test-async-event-data"})
-                    .addEvent({type:"test-async-event-type-3", data:"test-async-event-data"})
-                    .start();
-
+                assert.equals(bus.events.length, 1);
+                assert.equals(bus.events[0].type, "test-async-event-type-1");
                 assert.equals(chain.isComplete, false);
-                assert.equals(chain.isFailed, false);
+                assert.equals(chain.isFailed, true);
+                done();
 
-                setTimeout(function () {
-
-                    assert.equals(bus.events.length, 3);
-                    assert.equals(bus.events[0].type, "test-async-event-type-1");
-                    assert.equals(bus.events[1].type, "test-async-event-type-2");
-                    assert.equals(bus.events[2].type, "test-async-event-type-3");
-                    assert.equals(chain.isComplete, true);
-                    assert.equals(chain.isFailed, false);
-                    done();
-
-                }, 500);
-            },
-            "EventChain:test-async-stop-on-error":function (done) {
-
-                var EventBusMockup = function () {
-
-                    var self = this;
-
-                    self.events = [];
-
-                    self.publish = function (event) {
-
-                        var operation1 = new module.AsyncOperation();
-
-                        event.step.addAsyncOperation(operation1);
-
-                        setTimeout(function () {
-                            operation1.fault("fault");
-                        }, 100);
-
-                        self.events.push(event);
-                    }
-                };
-
-                var bus = new EventBusMockup();
-
-                var chain = new module.EventChain(bus);
-
-                chain.stopOnError = true;
-
-                chain.addEvent({type:"test-async-event-type-1", data:"test-async-event-data"})
-                    .addEvent({type:"test-async-event-type-2", data:"test-async-event-data"})
-                    .addEvent({type:"test-async-event-type-3", data:"test-async-event-data"})
-                    .start();
-
-                assert.equals(chain.isComplete, false);
-                assert.equals(chain.isFailed, false);
-
-                setTimeout(function () {
-
-                    assert.equals(bus.events.length, 1);
-                    assert.equals(bus.events[0].type, "test-async-event-type-1");
-                    assert.equals(chain.isComplete, false);
-                    assert.equals(chain.isFailed, true);
-                    done();
-
-                }, 500);
-            }
-        });
-
+            }, 500);
+        }
     });
 });
 
 buster.testCase("EventBus", function (run) {
 
-    require.config({baseUrl:"/../event-bus.js"});
+    run({
+        "EventBus:test-publish-invalid-parameters": function (done) {
 
-    require(["event-bus"], function (module) {
+            assert.exception(function () {
 
-        run({
-            "EventBus:test-publish-invalid-parameters":function (done) {
+                new lazydevs.eventbus.EventBus().publish(null);
+            });
 
-                assert.exception(function () {
+            assert.exception(function () {
 
-                    new module.EventBus().publish(null);
+                new lazydevs.eventbus.EventBus().publish({data: "data"});
+            });
+
+            done();
+        },
+
+        "EventBus:test-subscribe-invalid-parameters": function (done) {
+
+            assert.exception(function () {
+
+                new lazydevs.eventbus.EventBus().subscribe(null, function () {
                 });
+            });
 
-                assert.exception(function () {
+            assert.exception(function () {
 
-                    new module.EventBus().publish({data:"data"});
+                new lazydevs.eventbus.EventBus().subscribe(50, function () {
                 });
+            });
 
-                done();
-            },
+            assert.exception(function () {
 
-            "EventBus:test-subscribe-invalid-parameters":function (done) {
+                new lazydevs.eventbus.EventBus().subscribe("event-type", null);
+            });
 
-                assert.exception(function () {
+            assert.exception(function () {
 
-                    new module.EventBus().subscribe(null, function () {
-                    });
-                });
+                new lazydevs.eventbus.EventBus().subscribe("event-type", 50);
+            });
 
-                assert.exception(function () {
+            done();
+        },
 
-                    new module.EventBus().subscribe(50, function () {
-                    });
-                });
+        "EventBus:test-subscribe-and-publish": function (done) {
 
-                assert.exception(function () {
+            var bus = new lazydevs.eventbus.EventBus();
+            var handlerCalls = 0;
 
-                    new module.EventBus().subscribe("event-type", null);
-                });
+            // Subscribe an event handler
+            bus.subscribe("test-subscribe-event-type", function (event) {
+                handlerCalls++;
+                assert.equals(event.type, "test-subscribe-event-type");
+                assert.equals(event.data, "test-subscribe-event-data");
+            });
 
-                assert.exception(function () {
+            var event = {type: "test-subscribe-event-type", data: "test-subscribe-event-data"};
 
-                    new module.EventBus().subscribe("event-type", 50);
-                });
+            bus.publish(event);
 
-                done();
-            },
+            assert.equals(handlerCalls, 1);
 
-            "EventBus:test-subscribe-and-publish":function (done) {
+            // Subscribe a second handler
+            bus.subscribe("test-subscribe-event-type", function (event) {
+                handlerCalls++;
+            });
 
-                var bus = new module.EventBus();
-                var handlerCalls = 0;
+            bus.publish(event);
 
-                // Subscribe an event handler
-                bus.subscribe("test-subscribe-event-type", function (event) {
-                    handlerCalls++;
-                    assert.equals(event.type, "test-subscribe-event-type");
-                    assert.equals(event.data, "test-subscribe-event-data");
-                });
+            assert.equals(handlerCalls, 3);
 
-                var event = {type:"test-subscribe-event-type", data: "test-subscribe-event-data"};
+            done();
+        },
 
-                bus.publish(event);
+        "EventBus:test-subscribe-multiple": function (done) {
 
-                assert.equals(handlerCalls, 1);
+            var bus = new lazydevs.eventbus.EventBus();
+            var handlerCalls = 0;
 
-                // Subscribe a second handler
-                bus.subscribe("test-subscribe-event-type", function (event) {
-                    handlerCalls++;
-                });
+            // Subscribing the same handler twice should still only result in one handler call
+            var handler = function (event) {
+                handlerCalls++;
+            };
 
-                bus.publish(event);
+            bus.subscribe("test-subscribe", handler);
+            bus.subscribe("test-subscribe", handler);
+            bus.subscribe("test-subscribe", handler);
 
-                assert.equals(handlerCalls, 3);
+            bus.publish({type: "test-subscribe"});
 
-                done();
-            },
+            assert.equals(handlerCalls, 1);
 
-            "EventBus:test-subscribe-multiple":function (done) {
+            done();
+        },
 
-                var bus = new module.EventBus();
-                var handlerCalls = 0;
+        "EventBus:test-unsubscribe": function (done) {
 
-                // Subscribing the same handler twice should still only result in one handler call
-                var handler = function (event) {
-                    handlerCalls++;
-                };
+            var bus = new lazydevs.eventbus.EventBus();
+            var handlerCalls = 0;
 
-                bus.subscribe("test-subscribe", handler);
-                bus.subscribe("test-subscribe", handler);
-                bus.subscribe("test-subscribe", handler);
+            var handler = function (event) {
+                handlerCalls++;
+            };
 
-                bus.publish({type:"test-subscribe"});
+            bus.subscribe("test-subscribe", handler);
+            bus.unsubscribe("test-subscribe", handler);
 
-                assert.equals(handlerCalls, 1);
+            bus.publish({type: "test-subscribe"});
 
-                done();
-            },
+            assert.equals(handlerCalls, 0);
 
-            "EventBus:test-unsubscribe":function (done) {
-
-                var bus = new module.EventBus();
-                var handlerCalls = 0;
-
-                var handler = function (event) {
-                    handlerCalls++;
-                };
-
-                bus.subscribe("test-subscribe", handler);
-                bus.unsubscribe("test-subscribe", handler);
-
-                bus.publish({type:"test-subscribe"});
-
-                assert.equals(handlerCalls, 0);
-
-                done();
-            }
-
-        });
+            done();
+        }
 
     });
 });
