@@ -70,7 +70,7 @@ If one of your subscribed handlers needs to execute asynchronous code (e.g. an A
                 this.userData = userData;
                 operation.result();
             })
-            .fail(function() { operation.fault } );
+            .fail(function() { operation.fault() } );
 
         return operation;
     };
