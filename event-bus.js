@@ -136,7 +136,7 @@ lazydevs.eventbus.EventBus.chain = function() {
  * Shortcut for creating an async operation without writing the complete namespace
  * @returns {lazydevs.eventbus.AsyncOperation}
  */
-lazydevs.eventbus.EventBus.async = function() {
+lazydevs.eventbus.EventBus.operation = function() {
 
     return new lazydevs.eventbus.AsyncOperation();
 };
