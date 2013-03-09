@@ -44,7 +44,13 @@ lazydevs.eventbus.EventBus.prototype.publish = function (event) {
 
         var subscription = eventTypeSubscriptions[i];
 
-        subscription.handler.apply(subscription.scope, [event]);
+        var result = subscription.handler.apply(subscription.scope, [event]);
+
+        // If the handler returns an async operation then add it to the step
+        if(result instanceof lazydevs.eventbus.AsyncOperation && event.step instanceof lazydevs.eventbus.EventChainStep) {
+
+            event.step.addAsyncOperation(result);
+        }
     }
 };
 
