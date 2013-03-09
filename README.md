@@ -1,14 +1,11 @@
 Description
-===========
+-----------
 
 This library helps you to use the observer pattern in Javascript projects. The implementation is based on an event bus that manages subscriptions (= function callbacks) to specific event types (= unique string keys). Your code can publish an event (= a javascript object) through the bus, which then will then notify all subscribers (= call all callbacks) that have been registered for the events type.
 
 Also the library allows to publish multiple events in a specified order, even when asynchronous operations (e.g. AJAX calls) are involved.
 
-Usage
-=====
-
-Basic event bus usage
+Basic usage
 ---------------------
 
 First create an event bus instance:
